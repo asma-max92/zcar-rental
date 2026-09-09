@@ -1,0 +1,173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  firstName     String
+  lastName      String
+  phone         String?   @default("")
+  role          String    @default("customer")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  bookings      Booking[]
+  accounts      Account[]
+  sessions      Session[]
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Vehicle {
+  id            String        @id @default(cuid())
+  make          String
+  model         String
+  category      String
+  tagline       String        @default("")
+  description   String        @default("")
+  dailyRate     Int
+  imageUrl      String        @default("")
+  galleryImages String[]      @default([])
+  seats         Int           @default(4)
+  transmission  String        @default("Automatic")
+  horsepower    Int           @default(0)
+  topSpeed      String        @default("")
+  featured      Boolean       @default(false)
+  available     Boolean       @default(true)
+  turoIcalUrl   String        @default("")
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  bookings      Booking[]
+  blockedDates  BlockedDate[]
+  reviews       Review[]
+
+  @@index([category])
+  @@index([available])
+}
+
+model Booking {
+  id              String   @id @default(cuid())
+  userId          String
+  vehicleId       String
+  startDate       DateTime
+  endDate         DateTime
+  pickupLocation  String
+  dropoffLocation String
+  totalAmount     Int
+  status          String   @default("pending")
+  paymentStatus   String   @default("unpaid")
+  stripeSessionId String?  @default("")
+  extras          String   @default("[]")
+  notes           String   @default("")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle         Vehicle  @relation(fields: [vehicleId], references: [id])
+
+  @@index([userId])
+  @@index([vehicleId])
+  @@index([status])
+}
+
+model ContactSubmission {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String   @default("")
+  subject   String
+  message   String
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+}
+
+model RecommendationRequest {
+  id        String   @id @default(cuid())
+  name      String   @default("")
+  phone     String
+  location  String   @default("")
+  status    String   @default("new")
+  createdAt DateTime @default(now())
+
+  @@index([status])
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   @default("other")
+  fileUrl   String
+  fileType  String   @default("")
+  fileSize  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([category])
+}
+
+model BlockedDate {
+  id        String   @id @default(cuid())
+  vehicleId String
+  startDate DateTime
+  endDate   DateTime
+  source    String   @default("turo")
+  summary   String   @default("")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([startDate, endDate])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  vehicleId String
+  customerName String @default("")
+  rating    Int      @default(5)
+  text      String   @default("")
+  approved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+
+  @@index([vehicleId])
+  @@index([approved])
+}

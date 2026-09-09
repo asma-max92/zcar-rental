@@ -34,3 +34,25 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Tidet resources are synced by Tidet Cloud, never by Git.
+.tidet/
+
+# env files
+.env
+
+# Uploaded documents
+/public/uploads/
+
+# Agent directories
+.agents/
+.claude/
+.cursor/
+.devin/
+
+# Strategy documents
+*.pdf
+*.mp4
+
+# Build prompts
+zcar_build_prompt.md
