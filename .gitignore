@@ -53,6 +53,7 @@ next-env.d.ts
 # Strategy documents
 *.pdf
 *.mp4
+!public/videos/*.mp4
 
 # Build prompts
 zcar_build_prompt.md
