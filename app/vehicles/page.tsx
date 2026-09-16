@@ -11,6 +11,7 @@ export default async function VehiclesPage() {
     vehicles = await prisma.vehicle.findMany({
       where: { available: true },
       orderBy: { featured: "desc" },
+      select: { id: true, make: true, model: true, category: true, dailyRate: true, imageUrl: true, seats: true, transmission: true, featured: true },
     });
   } catch {
     // Build-time DB unreachable — will hydrate at runtime
