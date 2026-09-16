@@ -6,10 +6,15 @@ import { JsonLd, vehicleListSchema } from "@/components/json-ld";
 import VehiclesContent from "./vehicles-content";
 
 export default async function VehiclesPage() {
-  const vehicles = await prisma.vehicle.findMany({
-    where: { available: true },
-    orderBy: { featured: "desc" },
-  });
+  let vehicles: { id: string; make: string; model: string; category: string; dailyRate: number; imageUrl: string; seats: number; transmission: string; featured: boolean; }[] = [];
+  try {
+    vehicles = await prisma.vehicle.findMany({
+      where: { available: true },
+      orderBy: { featured: "desc" },
+    });
+  } catch {
+    // Build-time DB unreachable — will hydrate at runtime
+  }
 
   return (
     <main className="min-h-screen bg-ink">

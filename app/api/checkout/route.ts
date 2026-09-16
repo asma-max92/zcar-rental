@@ -4,6 +4,36 @@ import { prisma } from "@/lib/db";
 
 export const dynamic = "force-dynamic";
 
+export async function GET(request: NextRequest) {
+  try {
+    if (!stripe) {
+      return NextResponse.json(
+        { error: "Stripe is not configured" },
+        { status: 503 }
+      );
+    }
+
+    const { searchParams } = new URL(request.url);
+    const sessionId = searchParams.get("session_id");
+
+    if (!sessionId) {
+      return NextResponse.json(
+        { error: "Missing session_id" },
+        { status: 400 }
+      );
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    return NextResponse.json({ status: session.status });
+  } catch (error) {
+    console.error("Checkout verify error:", error);
+    return NextResponse.json(
+      { error: "Failed to verify session" },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!stripe) {

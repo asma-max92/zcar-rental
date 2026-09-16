@@ -484,31 +484,18 @@ export default function BookingContent() {
                 </div>
 
                 <button
-                  type="submit"
+                  type="button"
+                  onClick={handleStripeCheckout}
                   disabled={loading || (availability?.available === false)}
                   className="w-full bg-gold text-ink text-[12px] font-semibold uppercase tracking-[0.12em] px-6 py-4 rounded-lg hover:bg-gold-light transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
                 >
                   <Check className="w-4 h-4" />
-                  {loading ? "Processing..." : "Complete Booking Request"}
+                  {loading ? "Processing..." : "Complete Booking & Pay"}
                 </button>
 
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-ink-border" />
-                  </div>
-                  <div className="relative flex justify-center text-[11px] uppercase tracking-wider">
-                    <span className="bg-ink-card px-2 text-apple-gray">or</span>
-                  </div>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={handleStripeCheckout}
-                  disabled={loading || (availability?.available === false)}
-                  className="w-full bg-apple-black text-gold border border-gold/30 text-[12px] font-semibold uppercase tracking-[0.12em] px-6 py-4 rounded-lg hover:bg-gold/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  Pay Now with Card
-                </button>
+                <p className="text-[11px] text-apple-gray text-center">
+                  You will be redirected to Stripe to complete payment securely.
+                </p>
               </form>
             </div>
           </div>
@@ -579,8 +566,7 @@ export default function BookingContent() {
 
               <div className="mt-6 p-4 bg-ink rounded-xl">
                 <p className="text-[12px] text-apple-gray leading-relaxed">
-                  <span className="text-gold font-semibold">Note:</span> This is a booking request.
-                  Our concierge will confirm availability and send a payment link within 15 minutes.
+                  <span className="text-gold font-semibold">Secure Payment:</span> Your booking is confirmed immediately after payment. All major cards accepted.
                 </p>
               </div>
             </div>
