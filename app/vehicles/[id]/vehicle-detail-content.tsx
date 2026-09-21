@@ -17,6 +17,12 @@ import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppButton } from "@/components/whatsapp-button";
 import { AvailabilityCalendar } from "@/components/availability-calendar";
 
+const vehicleVideos: Record<string, string> = {
+  "cmubq0dni0000ncih050a4kzn": "/videos/corvette.mp4",
+  "cmubq0dnm0003ncih0n7nmz1a": "/videos/g550.mp4",
+  "cmubq0dnn0004ncihj08igha9": "/videos/mercedes-cle.mp4",
+};
+
 interface Vehicle {
   id: string;
   make: string;
@@ -103,6 +109,19 @@ export default function VehicleDetailContent({
                       <Image src={img} alt="" fill sizes="80px" loading="lazy" className="object-cover" />
                     </div>
                   ))}
+                </div>
+              )}
+              {vehicleVideos[vehicle.id] && (
+                <div className="mt-4 rounded-2xl overflow-hidden border border-ink-border">
+                  <video
+                    autoPlay
+                    muted
+                    loop
+                    playsInline
+                    className="w-full aspect-video object-cover"
+                  >
+                    <source src={vehicleVideos[vehicle.id]} type="video/mp4" />
+                  </video>
                 </div>
               )}
             </motion.div>

@@ -57,3 +57,6 @@ next-env.d.ts
 
 # Build prompts
 zcar_build_prompt.md
+
+# Raw fleet assets (source material)
+/fleet/
