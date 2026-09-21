@@ -14,7 +14,12 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  if (authHeader !== `Bearer ${secret}`) {
+  const expected = Buffer.from(`Bearer ${secret}`);
+  const actual = Buffer.from(authHeader || "");
+  if (
+    actual.length !== expected.length ||
+    !crypto.timingSafeEqual(actual, expected)
+  ) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
@@ -128,12 +133,11 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    await prisma.booking.deleteMany({});
-    await prisma.vehicle.deleteMany({});
-
-    for (const vehicle of vehicles) {
-      await prisma.vehicle.create({ data: vehicle });
-    }
+    await prisma.$transaction([
+      prisma.booking.deleteMany(),
+      prisma.vehicle.deleteMany(),
+      ...vehicles.map((vehicle) => prisma.vehicle.create({ data: vehicle })),
+    ]);
 
     return NextResponse.json({
       success: true,
