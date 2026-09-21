@@ -198,50 +198,18 @@ function BookingBar() {
 }
 
 /* ─────────── FEATURED FLEET ─────────── */
-const featuredVehicles = [
-  {
-    id: "1",
-    make: "Porsche",
-    model: "Macan S",
-    category: "Luxury SUV",
-    dailyRate: 34900,
-    imageUrl: "/images/porsche-macan.png",
-    seats: 5,
-    transmission: "Automatic",
-  },
-  {
-    id: "2",
-    make: "Porsche",
-    model: "Boxster S",
-    category: "Convertible",
-    dailyRate: 32900,
-    imageUrl: "/images/porsche-boxster.png",
-    seats: 2,
-    transmission: "Automatic",
-  },
-  {
-    id: "3",
-    make: "BMW",
-    model: "M440i Convertible",
-    category: "Luxury Convertible",
-    dailyRate: 29900,
-    imageUrl: "/images/bmw-m440i.png",
-    seats: 4,
-    transmission: "Automatic",
-  },
-  {
-    id: "4",
-    make: "Mercedes",
-    model: "CLE 300 Cabriolet",
-    category: "Luxury Convertible",
-    dailyRate: 27900,
-    imageUrl: "/images/mercedes-cle.png",
-    seats: 4,
-    transmission: "Automatic",
-  },
-];
+interface FeaturedVehicle {
+  id: string;
+  make: string;
+  model: string;
+  category: string;
+  dailyRate: number;
+  imageUrl: string;
+  seats: number;
+  transmission: string;
+}
 
-function VehicleCard({ vehicle, index }: { vehicle: typeof featuredVehicles[0]; index: number }) {
+function VehicleCard({ vehicle, index }: { vehicle: FeaturedVehicle; index: number }) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 24 }}
@@ -294,7 +262,7 @@ function VehicleCard({ vehicle, index }: { vehicle: typeof featuredVehicles[0]; 
   );
 }
 
-function FeaturedFleet() {
+function FeaturedFleet({ vehicles }: { vehicles: FeaturedVehicle[] }) {
   return (
     <section className="py-24 bg-ink">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -314,7 +282,7 @@ function FeaturedFleet() {
 
         <div className="px-8">
           <Carousel itemsPerView={3} autoPlay autoPlayInterval={6000}>
-            {featuredVehicles.map((vehicle, i) => (
+            {vehicles.map((vehicle, i) => (
               <VehicleCard key={vehicle.id} vehicle={vehicle} index={i} />
             ))}
           </Carousel>
@@ -664,13 +632,13 @@ function MarqueeSection() {
 }
 
 /* ─────────── EXPORT ─────────── */
-export function HomeContent() {
+export function HomeContent({ featuredVehicles }: { featuredVehicles: { id: string; make: string; model: string; category: string; dailyRate: number; imageUrl: string; seats: number; transmission: string }[] }) {
   return (
     <>
       <HeroSection />
       <BookingBar />
       <MarqueeSection />
-      <FeaturedFleet />
+      <FeaturedFleet vehicles={featuredVehicles} />
       <StatsBar />
       <ServicesSection />
       <TestimonialsSection />

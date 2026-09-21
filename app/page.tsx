@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { prisma } from "@/lib/db";
 import { SiteHeader } from "@/components/site-header";
 import { SiteFooter } from "@/components/site-footer";
 import { WhatsAppButton } from "@/components/whatsapp-button";
@@ -19,11 +20,17 @@ export const metadata: Metadata = {
   },
 };
 
-export default function Home() {
+export default async function Home() {
+  const featuredVehicles = await prisma.vehicle.findMany({
+    where: { featured: true, available: true },
+    orderBy: { dailyRate: "desc" },
+    select: { id: true, make: true, model: true, category: true, dailyRate: true, imageUrl: true, seats: true, transmission: true },
+  });
+
   return (
     <main className="min-h-screen bg-ink">
       <SiteHeader />
-      <HomeContent />
+      <HomeContent featuredVehicles={featuredVehicles} />
       <SiteFooter />
       <WhatsAppButton />
     </main>
