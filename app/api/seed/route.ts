@@ -1,24 +1,33 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 
 export async function POST(request: NextRequest) {
-  // Simple secret check — use your admin password or any secret you set
   const authHeader = request.headers.get("authorization");
-  const secret = process.env.SEED_SECRET || "zcar-seed-2024";
+  const secret = process.env.SEED_SECRET;
+
+  if (!secret) {
+    return NextResponse.json(
+      { error: "SEED_SECRET not configured" },
+      { status: 500 }
+    );
+  }
 
   if (authHeader !== `Bearer ${secret}`) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
-    // Create admin user if not exists
+    // Create admin user if not exists — generate random password
     const existingUser = await prisma.user.findUnique({
       where: { email: "john@doe.com" },
     });
 
+    let adminPassword: string | null = null;
     if (!existingUser) {
-      const hashedPassword = await bcrypt.hash("admin123", 10);
+      adminPassword = crypto.randomBytes(16).toString("hex");
+      const hashedPassword = await bcrypt.hash(adminPassword, 10);
       await prisma.user.create({
         data: {
           email: "john@doe.com",
@@ -119,7 +128,6 @@ export async function POST(request: NextRequest) {
       },
     ];
 
-    // Clear existing and seed
     await prisma.booking.deleteMany({});
     await prisma.vehicle.deleteMany({});
 
@@ -129,7 +137,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      message: `Seeded ${vehicles.length} vehicles and 1 admin user.`,
+      message: `Seeded ${vehicles.length} vehicles${adminPassword ? ` and admin user (password: ${adminPassword})` : ""}.`,
     });
   } catch (error) {
     console.error("Seed error:", error);
