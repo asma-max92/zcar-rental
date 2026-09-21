@@ -57,7 +57,7 @@ export default async function AdminDashboardPage() {
 
   // Daily revenue (last 30 days)
   const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 29);
   thirtyDaysAgo.setHours(0, 0, 0, 0);
   const paidBookings = await prisma.booking.findMany({
     where: {
@@ -73,7 +73,7 @@ export default async function AdminDashboardPage() {
     revenueByDay[d] = (revenueByDay[d] || 0) + b.totalAmount;
   }
   const dailyRevenue = [];
-  for (let i = 0; i < 31; i++) {
+  for (let i = 0; i < 30; i++) {
     const d = new Date(thirtyDaysAgo);
     d.setDate(d.getDate() + i);
     const ds = d.toISOString().split("T")[0];
