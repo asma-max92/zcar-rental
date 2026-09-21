@@ -5,17 +5,14 @@ import { WhatsAppButton } from "@/components/whatsapp-button";
 import { JsonLd, vehicleListSchema } from "@/components/json-ld";
 import VehiclesContent from "./vehicles-content";
 
+export const dynamic = "force-dynamic";
+
 export default async function VehiclesPage() {
-  let vehicles: { id: string; make: string; model: string; category: string; dailyRate: number; imageUrl: string; seats: number; transmission: string; featured: boolean; }[] = [];
-  try {
-    vehicles = await prisma.vehicle.findMany({
-      where: { available: true },
-      orderBy: { featured: "desc" },
-      select: { id: true, make: true, model: true, category: true, dailyRate: true, imageUrl: true, seats: true, transmission: true, featured: true },
-    });
-  } catch {
-    // Build-time DB unreachable — will hydrate at runtime
-  }
+  const vehicles = await prisma.vehicle.findMany({
+    where: { available: true },
+    orderBy: { featured: "desc" },
+    select: { id: true, make: true, model: true, category: true, dailyRate: true, imageUrl: true, seats: true, transmission: true, featured: true },
+  });
 
   return (
     <main className="min-h-screen bg-ink">
