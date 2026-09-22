@@ -11,6 +11,7 @@ import {
   Trash2,
   X,
   ArrowLeft,
+  Calendar,
 } from "lucide-react";
 import { SiteHeader } from "@/components/site-header";
 import { toast } from "sonner";
@@ -40,6 +41,15 @@ export default function AdminVehiclesPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Vehicle | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Calendar availability state
+  const [calendarOpen, setCalendarOpen] = useState(false);
+  const [calendarVehicle, setCalendarVehicle] = useState<Vehicle | null>(null);
+  const [blockedDates, setBlockedDates] = useState<Array<{ id: string; startDate: string; endDate: string; summary: string }>>([]);
+  const [calendarLoading, setCalendarLoading] = useState(false);
+  const [newBlock, setNewBlock] = useState({ startDate: "", endDate: "", summary: "Unavailable" });
+  const [calendarSubmitting, setCalendarSubmitting] = useState(false);
+
   const [form, setForm] = useState({
     make: "",
     model: "",
@@ -194,6 +204,74 @@ export default function AdminVehiclesPage() {
     }
   }
 
+  // Calendar availability functions
+  async function openCalendar(v: Vehicle) {
+    setCalendarVehicle(v);
+    setCalendarOpen(true);
+    setCalendarLoading(true);
+    try {
+      const res = await fetch(`/api/admin/vehicles/${v.id}/blocked-dates`);
+      if (res.ok) {
+        const data = await res.json();
+        setBlockedDates(data);
+      } else {
+        toast.error("Failed to load calendar");
+      }
+    } catch {
+      toast.error("Failed to load calendar");
+    } finally {
+      setCalendarLoading(false);
+    }
+  }
+
+  async function addBlockedDate(e: React.FormEvent) {
+    e.preventDefault();
+    if (!calendarVehicle || calendarSubmitting) return;
+    if (!newBlock.startDate || !newBlock.endDate) {
+      toast.error("Select start and end dates");
+      return;
+    }
+    setCalendarSubmitting(true);
+    try {
+      const res = await fetch(`/api/admin/vehicles/${calendarVehicle.id}/blocked-dates`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newBlock),
+      });
+      if (res.ok) {
+        toast.success("Blocked date added");
+        setNewBlock({ startDate: "", endDate: "", summary: "Unavailable" });
+        // Refresh list
+        const refreshed = await fetch(`/api/admin/vehicles/${calendarVehicle.id}/blocked-dates`);
+        if (refreshed.ok) setBlockedDates(await refreshed.json());
+      } else {
+        toast.error("Failed to add blocked date");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    } finally {
+      setCalendarSubmitting(false);
+    }
+  }
+
+  async function deleteBlockedDate(blockedDateId: string) {
+    if (!calendarVehicle) return;
+    if (!confirm("Remove this blocked date?")) return;
+    try {
+      const res = await fetch(`/api/admin/vehicles/${calendarVehicle.id}/blocked-dates/${blockedDateId}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        toast.success("Blocked date removed");
+        setBlockedDates(blockedDates.filter((b) => b.id !== blockedDateId));
+      } else {
+        toast.error("Failed to remove");
+      }
+    } catch {
+      toast.error("Something went wrong");
+    }
+  }
+
   if (status === "loading" || loading) {
     return (
       <main className="min-h-screen bg-ink">
@@ -289,6 +367,13 @@ export default function AdminVehiclesPage() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => openCalendar(v)}
+                          title="Manage Calendar"
+                          className="p-2 text-apple-gray hover:text-blue-400 transition-colors"
+                        >
+                          <Calendar className="w-4 h-4" />
+                        </button>
                         {v.turoIcalUrl && (
                           <button
                             onClick={() => syncTuro(v.id)}
@@ -322,7 +407,107 @@ export default function AdminVehiclesPage() {
         </div>
       </section>
 
-      {/* Modal */}
+      {/* Calendar Modal */}
+      {calendarOpen && calendarVehicle && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="bg-ink-card border border-ink-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-ink-border">
+              <div>
+                <h2 className="font-semibold text-apple-black text-[18px]">
+                  {calendarVehicle.make} {calendarVehicle.model}
+                </h2>
+                <p className="text-[12px] text-apple-gray mt-1">Calendar Availability</p>
+              </div>
+              <button
+                onClick={() => setCalendarOpen(false)}
+                className="p-2 text-apple-gray hover:text-apple-black transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-6">
+              {/* Add blocked date form */}
+              <form onSubmit={addBlockedDate} className="bg-ink-light rounded-xl p-4 space-y-3">
+                <h3 className="text-[13px] font-semibold text-apple-black">Block Dates</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.15em] text-apple-gray mb-1.5">From</label>
+                    <input
+                      type="date"
+                      required
+                      value={newBlock.startDate}
+                      onChange={(e) => setNewBlock({ ...newBlock, startDate: e.target.value })}
+                      className="w-full bg-ink border border-ink-border rounded-lg px-3 py-2.5 text-[14px] text-apple-black focus:outline-none focus:border-gold/50"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold uppercase tracking-[0.15em] text-apple-gray mb-1.5">To</label>
+                    <input
+                      type="date"
+                      required
+                      value={newBlock.endDate}
+                      onChange={(e) => setNewBlock({ ...newBlock, endDate: e.target.value })}
+                      className="w-full bg-ink border border-ink-border rounded-lg px-3 py-2.5 text-[14px] text-apple-black focus:outline-none focus:border-gold/50"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold uppercase tracking-[0.15em] text-apple-gray mb-1.5">Reason</label>
+                  <input
+                    value={newBlock.summary}
+                    onChange={(e) => setNewBlock({ ...newBlock, summary: e.target.value })}
+                    placeholder="e.g. Maintenance, Booked, etc."
+                    className="w-full bg-ink border border-ink-border rounded-lg px-3 py-2.5 text-[14px] text-apple-black placeholder:text-apple-gray/50 focus:outline-none focus:border-gold/50"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={calendarSubmitting}
+                  className="w-full bg-gold text-ink text-[12px] font-semibold uppercase tracking-[0.12em] px-4 py-2.5 rounded-lg hover:bg-gold-light transition-colors disabled:opacity-50"
+                >
+                  {calendarSubmitting ? "Adding..." : "Block Dates"}
+                </button>
+              </form>
+
+              {/* Blocked dates list */}
+              <div>
+                <h3 className="text-[13px] font-semibold text-apple-black mb-3">
+                  Blocked Dates ({blockedDates.length})
+                </h3>
+                {calendarLoading ? (
+                  <p className="text-[13px] text-apple-gray">Loading...</p>
+                ) : blockedDates.length === 0 ? (
+                  <p className="text-[13px] text-apple-gray">No blocked dates. Vehicle is fully available.</p>
+                ) : (
+                  <div className="space-y-2 max-h-64 overflow-y-auto">
+                    {blockedDates.map((b) => (
+                      <div key={b.id} className="flex items-center justify-between bg-ink-light rounded-lg px-4 py-3">
+                        <div>
+                          <p className="text-[13px] text-apple-black font-medium">
+                            {new Date(b.startDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            {" — "}
+                            {new Date(b.endDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                          </p>
+                          <p className="text-[11px] text-apple-gray">{b.summary}</p>
+                        </div>
+                        <button
+                          onClick={() => deleteBlockedDate(b.id)}
+                          className="p-1.5 text-apple-gray hover:text-red-400 transition-colors"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Vehicle Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
           <div className="bg-ink-card border border-ink-border rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
