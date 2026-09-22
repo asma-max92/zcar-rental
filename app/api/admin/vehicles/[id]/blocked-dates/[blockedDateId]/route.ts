@@ -15,8 +15,8 @@ export async function DELETE(
   }
 
   try {
-    await prisma.blockedDate.delete({
-      where: { id: params.blockedDateId },
+    await prisma.blockedDate.deleteMany({
+      where: { id: params.blockedDateId, vehicleId: params.id },
     });
     return NextResponse.json({ success: true });
   } catch (error) {

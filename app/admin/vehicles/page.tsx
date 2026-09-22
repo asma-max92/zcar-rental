@@ -140,7 +140,7 @@ export default function AdminVehiclesPage() {
 
     const payload = {
       ...form,
-      dailyRate: Number(form.dailyRate) * 100,
+      dailyRate: Math.round(Number(form.dailyRate) * 100),
       seats: Number(form.seats),
     };
 
