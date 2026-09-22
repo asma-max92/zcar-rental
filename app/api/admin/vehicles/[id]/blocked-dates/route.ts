@@ -42,11 +42,36 @@ export async function POST(
 
   try {
     const body = await request.json();
+
+    if (!body.startDate || !body.endDate) {
+      return NextResponse.json(
+        { error: "startDate and endDate are required" },
+        { status: 400 }
+      );
+    }
+
+    const startDate = new Date(body.startDate);
+    const endDate = new Date(body.endDate);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      return NextResponse.json(
+        { error: "Invalid date format" },
+        { status: 400 }
+      );
+    }
+
+    if (startDate > endDate) {
+      return NextResponse.json(
+        { error: "startDate must be before or equal to endDate" },
+        { status: 400 }
+      );
+    }
+
     const blockedDate = await prisma.blockedDate.create({
       data: {
         vehicleId: params.id,
-        startDate: new Date(body.startDate),
-        endDate: new Date(body.endDate),
+        startDate,
+        endDate,
         source: "manual",
         summary: body.summary || "Unavailable",
       },

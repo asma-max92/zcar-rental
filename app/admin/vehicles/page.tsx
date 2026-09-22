@@ -243,7 +243,11 @@ export default function AdminVehiclesPage() {
         setNewBlock({ startDate: "", endDate: "", summary: "Unavailable" });
         // Refresh list
         const refreshed = await fetch(`/api/admin/vehicles/${calendarVehicle.id}/blocked-dates`);
-        if (refreshed.ok) setBlockedDates(await refreshed.json());
+        if (refreshed.ok) {
+          setBlockedDates(await refreshed.json());
+        } else {
+          toast.error("Failed to refresh calendar");
+        }
       } else {
         toast.error("Failed to add blocked date");
       }
