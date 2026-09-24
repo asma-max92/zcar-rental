@@ -28,11 +28,11 @@ async function main() {
     // .env doesn't exist yet, start fresh
   }
 
-  // Replace or add DATABASE_URL
+  // Replace or add DATABASE_URL (no quotes — value is already URL-encoded)
   if (envContent.includes("DATABASE_URL=")) {
-    envContent = envContent.replace(/^DATABASE_URL=.*$/gm, `DATABASE_URL='${dbUrl}'`);
+    envContent = envContent.replace(/^DATABASE_URL=.*$/gm, `DATABASE_URL=${dbUrl}`);
   } else {
-    envContent += `\nDATABASE_URL='${dbUrl}'\n`;
+    envContent += `\nDATABASE_URL=${dbUrl}\n`;
   }
 
   fs.writeFileSync(envPath, envContent);
@@ -54,12 +54,15 @@ async function main() {
     process.exit(1);
   }
 
+  const seedPassword = await ask("Set admin password (or press Enter for random): ");
+  const adminPassword = seedPassword.trim() || require("crypto").randomBytes(16).toString("hex");
+
   console.log("Seeding database...");
   try {
     execSync("npx ts-node --compiler-options '{\"module\":\"CommonJS\"}' scripts/seed.ts", {
       stdio: "inherit",
       cwd: projectRoot,
-      env: { ...childEnv, ADMIN_SEED_PASSWORD: "admin123" },
+      env: { ...childEnv, ADMIN_SEED_PASSWORD: adminPassword },
     });
     console.log("✓ Seed complete\n");
   } catch (e) {
@@ -70,7 +73,7 @@ async function main() {
   console.log("=== DONE ===");
   console.log("Login: https://zcarrentalmiami.com/login");
   console.log("Email: john@doe.com");
-  console.log("Password: admin123");
+  console.log(`Password: ${adminPassword}`);
   console.log("Admin: https://zcarrentalmiami.com/admin/vehicles\n");
 
   rl.close();
