@@ -18,7 +18,7 @@ async function main() {
   const projectRef = await ask("Your Supabase project ref (the XXXXXX in postgres.XXXXXX): ");
   const password = await ask("Your Supabase database password: ");
 
-  const dbUrl = `postgresql://postgres.${projectRef}:${password}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
+  const dbUrl = `postgresql://postgres.${projectRef}:${encodeURIComponent(password)}@aws-0-us-east-1.pooler.supabase.com:6543/postgres`;
 
   const envPath = path.join(__dirname, "..", ".env");
   let envContent = "";
@@ -30,7 +30,7 @@ async function main() {
 
   // Replace or add DATABASE_URL
   if (envContent.includes("DATABASE_URL=")) {
-    envContent = envContent.replace(/DATABASE_URL=.*/g, `DATABASE_URL='${dbUrl}'`);
+    envContent = envContent.replace(/^DATABASE_URL=.*$/gm, `DATABASE_URL='${dbUrl}'`);
   } else {
     envContent += `\nDATABASE_URL='${dbUrl}'\n`;
   }
