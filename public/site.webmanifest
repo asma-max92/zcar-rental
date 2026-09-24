@@ -1,0 +1,16 @@
+{
+  "name": "Z Car Rental Miami",
+  "short_name": "Z Car Rental",
+  "description": "Premium luxury car rentals in Miami",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "48x48",
+      "type": "image/x-icon"
+    }
+  ]
+}

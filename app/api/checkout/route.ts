@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { prisma } from "@/lib/db";
 
@@ -34,6 +35,28 @@ export async function GET(request: NextRequest) {
   }
 }
 
+function getBaseUrl(request: NextRequest): string {
+  let url: string | undefined;
+
+  // Priority: NEXTAUTH_URL > VERCEL_PROJECT_PRODUCTION_URL > VERCEL_URL > request origin
+  if (process.env.NEXTAUTH_URL) {
+    url = process.env.NEXTAUTH_URL;
+  } else if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    url = `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`;
+  } else if (process.env.VERCEL_URL) {
+    url = `https://${process.env.VERCEL_URL}`;
+  } else {
+    try {
+      url = new URL(request.url).origin;
+    } catch {
+      url = "http://localhost:3000";
+    }
+  }
+
+  // Strip trailing slash to avoid double slashes in URLs
+  return url.replace(/\/$/, "");
+}
+
 export async function POST(request: NextRequest) {
   try {
     if (!stripe) {
@@ -46,7 +69,6 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       vehicleId,
-      vehicleName,
       startDate,
       endDate,
       pickupLocation,
@@ -93,7 +115,14 @@ export async function POST(request: NextRequest) {
 
     let extrasData: { insurance?: string; addons?: Record<string, boolean>; insuranceTotal?: number; addonsTotal?: number } = {};
     try {
-      extrasData = extras ? JSON.parse(extras) : {};
+      const parsed = extras ? JSON.parse(extras) : {};
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        return NextResponse.json(
+          { error: "Invalid extras format" },
+          { status: 400 }
+        );
+      }
+      extrasData = parsed;
     } catch {
       return NextResponse.json(
         { error: "Invalid extras format" },
@@ -102,7 +131,14 @@ export async function POST(request: NextRequest) {
     }
 
     const insuranceRates: Record<string, number> = { basic: 0, premium: 3500, full: 6500 };
-    const insuranceTotal = (insuranceRates[extrasData.insurance || "basic"] || 0) * computedDays;
+    const insuranceKey = extrasData.insurance || "basic";
+    if (!Object.keys(insuranceRates).includes(insuranceKey)) {
+      return NextResponse.json(
+        { error: "Invalid insurance option" },
+        { status: 400 }
+      );
+    }
+    const insuranceTotal = insuranceRates[insuranceKey] * computedDays;
 
     const addonRates: Record<string, number> = { childSeat: 2500, extraDriver: 7500, delivery: 7500 };
     const selectedAddons = extrasData.addons || {};
@@ -148,6 +184,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const baseUrl = getBaseUrl(request);
+
+    // Validate that production URLs are not localhost
+    if (process.env.NODE_ENV === "production" && baseUrl.includes("localhost")) {
+      console.error("Checkout error: NEXTAUTH_URL or VERCEL_URL must be set in production");
+      return NextResponse.json(
+        { error: "Server configuration error: missing production URL" },
+        { status: 500 }
+      );
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -155,7 +202,7 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: "usd",
             product_data: {
-              name: `Car Rental — ${vehicleName}`,
+              name: `Car Rental — ${vehicle.make} ${vehicle.model}`,
               description: `${computedDays} days from ${startDate} to ${endDate}`,
             },
             unit_amount: totalAmount,
@@ -164,16 +211,16 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: "payment",
-      success_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/booking/confirmation?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/booking?vehicle=${vehicleId}`,
+      success_url: `${baseUrl}/booking/confirmation?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/booking?vehicle=${vehicleId}`,
       customer_email: email,
       metadata: {
         vehicleId,
         startDate,
         endDate,
-        pickupLocation,
-        dropoffLocation,
-        name,
+        pickupLocation: pickupLocation || "",
+        dropoffLocation: dropoffLocation || "",
+        name: name || "",
         email,
         phone: phone || "",
         notes: notes || "",
@@ -185,8 +232,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ sessionId: session.id, url: session.url });
   } catch (error) {
     console.error("Checkout error:", error);
+    // Only surface Stripe errors to the client; hide internal/DB errors
+    let message = "Failed to create checkout session";
+    if (error instanceof Stripe.errors.StripeError || (error instanceof Error && error.name === "StripeError")) {
+      message = (error as Error).message;
+    }
     return NextResponse.json(
-      { error: "Failed to create checkout session" },
+      { error: message },
       { status: 500 }
     );
   }

@@ -169,7 +169,7 @@ export default function BookingContent() {
       if (res.ok && data.url) {
         window.location.href = data.url;
       } else {
-        toast.error("Failed to start checkout. Please try again.");
+        toast.error(data.error || "Failed to start checkout. Please try again.");
       }
     } catch {
       toast.error("Something went wrong. Please try again.");
