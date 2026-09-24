@@ -11,7 +11,30 @@
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/seed.ts",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "prepare": "husky",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "test:integration": "cross-env NODE_ENV=test DATABASE_URL=postgresql://test:test@localhost:5433/zcar_test NEXTAUTH_SECRET=test-secret NEXTAUTH_URL=http://localhost:3000 vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:coverage": "vitest run --coverage",
+    "test:db:up": "docker compose -f docker-compose.test.yml up -d --wait",
+    "test:db:down": "docker compose -f docker-compose.test.yml down",
+    "test:db:push": "cross-env DATABASE_URL=postgresql://test:test@localhost:5433/zcar_test npx prisma db push --accept-data-loss",
+    "test:db:seed": "cross-env DATABASE_URL=postgresql://test:test@localhost:5433/zcar_test npx prisma db seed",
+    "ci": "npm run lint && npm run typecheck && npm run test:unit && npm run test:db:up && npm run test:db:push && npm run test:db:seed && npm run test:integration && npm run build",
+    "ci:local": "npm run lint && npm run typecheck && npm run test:unit && npm run build"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,css}": [
+      "prettier --write"
+    ]
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} scripts/seed.ts"
@@ -48,19 +71,32 @@
     "resend": "^6.26.0",
     "sonner": "^2.0.8",
     "stripe": "^22.6.1",
-    "tailwind-merge": "^3.6.0",
+    "tailwind-merge": "^2.5.4",
     "twilio": "^6.1.0",
-    "zod": "^4.5.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20",
+    "@playwright/test": "^1.63.0",
+    "@testing-library/dom": "^10.4.2",
+    "@testing-library/jest-dom": "^6.5.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.0",
+    "@types/node": "^20.19.43",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@vitejs/plugin-react": "^4.3.0",
+    "@vitest/coverage-v8": "^2.1.1",
+    "cross-env": "^7.0.3",
     "eslint": "^8",
     "eslint-config-next": "14.2.35",
+    "husky": "^9.1.7",
+    "jsdom": "^24.0.0",
+    "lint-staged": "^15.2.10",
+    "msw": "^2.15.0",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5.9.3",
+    "vitest": "^2.1.1"
   }
 }

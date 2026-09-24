@@ -1,0 +1,13 @@
+#!/bin/sh
+# Pre-push hook: runs CI gate before allowing push.
+# If Docker is available and running, runs full CI with integration tests.
+# Otherwise falls back to local CI (lint + typecheck + unit tests + build).
+
+if docker info >/dev/null 2>&1; then
+  echo "Docker detected — running full CI (includes integration tests)..."
+  npm run ci
+else
+  echo "Docker not available — running local CI (lint, typecheck, unit tests, build)..."
+  echo "To run integration tests, start Docker and run: npm run ci"
+  npm run ci:local
+fi
